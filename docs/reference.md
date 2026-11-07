@@ -117,7 +117,7 @@ The script (`cli/scripts/publish.sh`) logs you in to npm if needed, type-checks,
 
   The publish script prints these commands when it detects a staged version.
 
-`--server` is optional. The CLI always needs to know where your dashboard runs (to sign in and send logs), but `npx localxpo link` asks for it the first time and saves it in the project's `localxpo.json`. `--server` only changes the URL that prompt suggests (default `http://localhost:3000`).
+`--server` is optional. The CLI always needs to know where your dashboard runs (to sign in and send logs), but `npx localxpo link` asks for it the first time and saves it in the project's `localxpo.json`. `--server` only changes the URL that prompt suggests (default `https://localxpo.app`, localxpo Cloud; pass your own URL when self-hosting).
 
 ## Build from the dashboard (agent)
 

@@ -308,9 +308,13 @@ npx localxpo agent --list               # what this machine serves`}
               Create a token on <strong>CLI &amp; tokens</strong> in the dashboard, then skip <C>link</C> in CI or on a headless Mac:
             </p>
             <CodeBlock
-              code={`LOCALXPO_URL=https://your-dashboard LOCALXPO_TOKEN=lx_… npx localxpo build -p ios
+              code={`LOCALXPO_TOKEN=lx_… npx localxpo build -p ios
 LOCALXPO_NO_METRICS=1 npx localxpo build -p android    # turn machine metrics off`}
             />
+            <p>
+              The CLI talks to localxpo Cloud (<C>https://localxpo.app</C>) by default. Self-hosting? Add <C>LOCALXPO_URL=https://your-dashboard</C>, or run{' '}
+              <C>npx localxpo link --url https://your-dashboard</C> once.
+            </p>
           </Section>
 
           <Section id='env' title='Environment variables'>
