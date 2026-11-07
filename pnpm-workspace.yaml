@@ -1,0 +1,8 @@
+packages:
+  - .
+# better-sqlite3 must run its install script (it fetches/builds the native SQLite driver).
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  sharp: false
+  unrs-resolver: false
