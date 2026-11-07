@@ -26,7 +26,13 @@ const PagesLayout = async ({ children }: Readonly<{ children: ReactNode }>) => {
   const cloud = isCloud()
 
   const orgs = await Promise.all(
-    userOrgs.map(async o => ({ slug: o.slug, name: o.name, role: o.role, plan: cloud ? (await getOrgPlan(o.id)).plan.name : null }))
+    userOrgs.map(async o => {
+      if (!cloud) return { slug: o.slug, name: o.name, role: o.role, plan: null }
+
+      const { plan, billing } = await getOrgPlan(o.id)
+
+      return { slug: o.slug, name: o.name, role: o.role, plan: plan.name, tier: plan.id, trial: billing.status === 'trialing' && plan.id !== 'free' }
+    })
   )
 
   const orgSlugById = new Map(userOrgs.map(o => [o.id, o.slug]))
@@ -46,7 +52,7 @@ const PagesLayout = async ({ children }: Readonly<{ children: ReactNode }>) => {
     <div className='flex h-full w-full min-w-0'>
       <AppSidebar orgs={orgs} projects={projects} fallbackOrg={fallbackOrg} user={{ name: user.name, email: user.email }} cloud={cloud} />
       <SidebarInset className='flex min-w-0 flex-1 flex-col'>
-        <Header user={{ name: user.name, email: user.email }} orgs={orgs} projects={projects} />
+        <Header user={{ name: user.name, email: user.email }} orgs={orgs} projects={projects} fallbackOrg={fallbackOrg} />
         <main className='mx-auto size-full max-w-360 flex-1 px-4 py-6 sm:px-6'>{children}</main>
         <Toaster />
       </SidebarInset>

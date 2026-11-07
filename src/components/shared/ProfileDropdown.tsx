@@ -4,9 +4,10 @@
 import Link from 'next/link'
 
 // Third-party Imports
-import { LogOutIcon, SettingsIcon, TerminalIcon } from 'lucide-react'
+import { CreditCardIcon, LogOutIcon, SettingsIcon, TerminalIcon } from 'lucide-react'
 
 // Component Imports
+import PlanBadge, { type PlanTier } from '@/components/shared/PlanBadge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,6 +25,9 @@ import { logoutAction } from '@/lib/actions/auth'
 
 export type HeaderUser = { name: string; email: string }
 
+/** The current organization's plan (localxpo Cloud). */
+export type HeaderPlan = { tier: PlanTier; label: string; trial?: boolean; orgName: string; href: string }
+
 const initials = (name: string) =>
   name
     .split(/\s+/)
@@ -32,7 +36,7 @@ const initials = (name: string) =>
     .map(p => p[0]!.toUpperCase())
     .join('') || '?'
 
-const ProfileDropdown = ({ user }: { user: HeaderUser }) => {
+const ProfileDropdown = ({ user, plan }: { user: HeaderUser; plan?: HeaderPlan }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button variant='ghost' size='icon' className='rounded-full hover:bg-transparent' />}>
@@ -57,6 +61,20 @@ const ProfileDropdown = ({ user }: { user: HeaderUser }) => {
             </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
+        {plan && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem render={<Link href={plan.href} />} className='justify-between gap-3'>
+                <span className='flex min-w-0 items-center gap-2'>
+                  <CreditCardIcon />
+                  <span className='truncate'>{plan.orgName}</span>
+                </span>
+                <PlanBadge tier={plan.tier} label={plan.label} trial={plan.trial} />
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem render={<Link href='/account' />}>

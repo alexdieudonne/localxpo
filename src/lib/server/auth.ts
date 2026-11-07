@@ -29,10 +29,32 @@ export const findUserByEmail = async (email: string) =>
     | (User & { password_hash: string })
     | undefined
 
-export const createUser = async (name: string, email: string, password: string): Promise<User> => {
+/** Answers from the sign-up steps (localxpo Cloud). Every field is optional: older accounts have none. */
+export type SignupProfile = {
+  company?: string | null
+  companySize?: string | null
+  referralSource?: string | null
+  useCase?: string | null
+  useCaseDetails?: string | null
+}
+
+export const createUser = async (name: string, email: string, password: string, profile: SignupProfile = {}): Promise<User> => {
   const user: User = { id: newId(), name: name.trim(), email: email.trim().toLowerCase(), created_at: Date.now() }
 
-  await db.run('INSERT INTO users (id, name, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)', user.id, user.name, user.email, await hashPasswordAsync(password), user.created_at)
+  await db.run(
+    `INSERT INTO users (id, name, email, password_hash, created_at, company, company_size, referral_source, use_case, use_case_details)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    user.id,
+    user.name,
+    user.email,
+    await hashPasswordAsync(password),
+    user.created_at,
+    profile.company || null,
+    profile.companySize || null,
+    profile.referralSource || null,
+    profile.useCase || null,
+    profile.useCaseDetails || null
+  )
 
   return user
 }

@@ -23,7 +23,7 @@ const RegisterPage = async () => {
       description={cloud ? 'Start free on localxpo Cloud. Your builds still run on your own machines.' : 'One account on this server for you and your team.'}
     >
       <div className='space-y-6'>
-        <RegisterForm />
+        <RegisterForm cloud={cloud} />
         <p className='text-muted-foreground text-sm'>
           Already have an account?{' '}
           <Link href='/login' className='text-foreground font-medium underline-offset-4 hover:underline'>

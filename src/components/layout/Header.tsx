@@ -7,8 +7,12 @@ import { Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+// Third-party Imports
+import { SparklesIcon } from 'lucide-react'
+
 // Component Imports
 import ModeToggle from '@/components/layout/ModeToggle'
+import PlanBadge, { isPaidTier } from '@/components/shared/PlanBadge'
 import type { SidebarOrg, SidebarProject } from '@/components/layout/AppSidebar'
 import ProfileDropdown, { type HeaderUser } from '@/components/shared/ProfileDropdown'
 import {
@@ -63,9 +67,14 @@ const toCrumbs = (pathname: string, orgs: SidebarOrg[], projects: SidebarProject
   return crumbs
 }
 
-const Header = ({ user, orgs, projects }: { user: HeaderUser; orgs: SidebarOrg[]; projects: SidebarProject[] }) => {
+type HeaderProps = { user: HeaderUser; orgs: SidebarOrg[]; projects: SidebarProject[]; fallbackOrg?: string | null }
+
+const Header = ({ user, orgs, projects, fallbackOrg }: HeaderProps) => {
   const pathname = usePathname()
   const crumbs = toCrumbs(pathname, orgs, projects)
+  const first = pathname.split('/').filter(Boolean)[0]
+  const org = orgs.find(o => o.slug === first) ?? orgs.find(o => o.slug === fallbackOrg)
+  const paid = isPaidTier(org?.tier)
 
   return (
     <header className='bg-card sticky top-0 z-50 border-b'>
@@ -97,8 +106,24 @@ const Header = ({ user, orgs, projects }: { user: HeaderUser; orgs: SidebarOrg[]
           </Breadcrumb>
         </div>
         <div className='flex items-center gap-1.5'>
+          {org?.plan &&
+            (paid ? (
+              <Link href={`/${org.slug}/billing`} className='mr-1 transition hover:opacity-85' title={`${org.name} is on ${org.plan}`}>
+                <PlanBadge tier={org.tier!} label={org.plan} trial={org.trial} size='md' />
+              </Link>
+            ) : (
+              org.role === 'owner' && (
+                <Link
+                  href={`/${org.slug}/billing`}
+                  className='text-muted-foreground hover:text-foreground mr-1 inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition'
+                >
+                  <SparklesIcon className='text-primary size-3.5' aria-hidden />
+                  Upgrade
+                </Link>
+              )
+            ))}
           <ModeToggle />
-          <ProfileDropdown user={user} />
+          <ProfileDropdown user={user} plan={org?.plan ? { tier: org.tier ?? 'free', label: org.plan, trial: org.trial, orgName: org.name, href: `/${org.slug}/billing` } : undefined} />
         </div>
       </div>
     </header>

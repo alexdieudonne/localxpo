@@ -306,6 +306,18 @@ CREATE TABLE login_attempts (
 );
 CREATE INDEX login_attempts_key_at ON login_attempts (key, at);
 `
+  },
+  {
+    version: 5,
+    name: 'sign-up profile (company, team size, how they heard, use case)',
+    sql: /* sql */ `
+-- All nullable: accounts created before this migration simply have no answers.
+ALTER TABLE users ADD COLUMN company TEXT;
+ALTER TABLE users ADD COLUMN company_size TEXT;
+ALTER TABLE users ADD COLUMN referral_source TEXT;
+ALTER TABLE users ADD COLUMN use_case TEXT;
+ALTER TABLE users ADD COLUMN use_case_details TEXT;
+`
   }
 ]
 

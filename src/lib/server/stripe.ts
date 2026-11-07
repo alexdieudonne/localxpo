@@ -112,7 +112,9 @@ export const startCheckout = async (input: { org: OrgRef; email: string; plan: P
   }
 
   const customer = await ensureCustomer(org, input.email)
-  const back = `${baseUrl}/${org.slug}/billing`
+
+  // Back through /api/billing/return, which applies the subscription before the dashboard renders.
+  const back = `${baseUrl}/api/billing/return?org=${encodeURIComponent(org.slug)}&from=checkout`
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
@@ -127,8 +129,8 @@ export const startCheckout = async (input: { org: OrgRef; email: string; plan: P
       ...(billing.trial_used ? {} : { trial_period_days: TRIAL_DAYS })
     },
     metadata: { org_id: org.id },
-    success_url: `${back}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${back}?checkout=canceled`
+    success_url: `${back}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: back
   })
 
   if (!session.url) throw new Error('Stripe did not return a checkout URL.')
@@ -142,7 +144,7 @@ export const portalUrl = async (org: OrgRef, email: string, baseUrl: string) => 
 
   const session = await getStripe().billingPortal.sessions.create({
     customer,
-    return_url: `${baseUrl}/${org.slug}/billing`,
+    return_url: `${baseUrl}/api/billing/return?org=${encodeURIComponent(org.slug)}&from=portal`,
     configuration: await portalConfiguration()
   })
 

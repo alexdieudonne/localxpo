@@ -8,10 +8,11 @@ import Link from 'next/link'
 import { useParams, usePathname, useRouter } from 'next/navigation'
 
 // Third-party Imports
-import { CheckIcon, ChevronsUpDownIcon, CopyIcon, PlusIcon, SearchIcon, SettingsIcon, TerminalIcon } from 'lucide-react'
+import { CheckIcon, ChevronsUpDownIcon, CopyIcon, PlusIcon, SearchIcon, SettingsIcon, SparklesIcon, TerminalIcon } from 'lucide-react'
 
 // Component Imports
 import LogoSvg from '@/assets/svg/logo'
+import PlanBadge, { type PlanTier } from '@/components/shared/PlanBadge'
 import { colorFor } from '@/components/shared/EntityAvatar'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -22,10 +23,22 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { orgNav, orgNavCloud, projectNav, type NavSection } from '@/configs/navConfig'
 import themeConfig from '@/configs/themeConfig'
 
+// Lib Imports
+import { formatHistory, PLANS, TRIAL_DAYS } from '@/lib/plans'
+
 // Util Imports
 import { cn } from '@/lib/utils'
 
-export type SidebarOrg = { slug: string; name: string; role: string; plan?: string | null }
+export type SidebarOrg = {
+  slug: string
+  name: string
+  role: string
+
+  /** localxpo Cloud only: plan name, its id and whether it's a trial. */
+  plan?: string | null
+  tier?: PlanTier
+  trial?: boolean
+}
 export type SidebarProject = { orgSlug: string; slug: string; name: string; identifier?: string | null; lastStatus?: string | null }
 
 type Props = {
@@ -62,13 +75,15 @@ const RailTile = ({
   label,
   active,
   children,
-  className
+  className,
+  badge
 }: {
   href: string
   label: string
   active?: boolean
   children: React.ReactNode
   className?: string
+  badge?: React.ReactNode
 }) => (
   <Tooltip>
     <TooltipTrigger
@@ -95,6 +110,7 @@ const RailTile = ({
         aria-hidden
       />
       {children}
+      {badge}
     </TooltipTrigger>
     <TooltipContent side='right'>{label}</TooltipContent>
   </Tooltip>
@@ -191,6 +207,23 @@ const ProjectPicker = ({ orgBase, projects, current }: { orgBase: string; projec
   )
 }
 
+// ---------- Plan card (localxpo Cloud) ----------
+
+const PlanCard = ({ org, orgBase }: { org: SidebarOrg; orgBase: string }) => {
+  if (org.tier !== 'free' || org.role !== 'owner') return null
+
+  return (
+    <Link href={`${orgBase}/billing`} className='group hover:bg-sidebar-accent/60 block rounded-lg border p-3 transition'>
+      <span className='flex items-center gap-1.5 text-xs font-medium'>
+        <SparklesIcon className='text-primary size-3.5' aria-hidden /> Upgrade to Pro
+      </span>
+      <span className='text-muted-foreground mt-1 block text-[11px] leading-relaxed'>
+        {PLANS.pro.limits.machines} machines, {formatHistory(PLANS.pro.limits.historyDays)} of history. Free for {TRIAL_DAYS} days.
+      </span>
+    </Link>
+  )
+}
+
 // ---------- Copyable build command ----------
 
 const QuickBuild = () => {
@@ -270,7 +303,13 @@ const AppSidebar = ({ orgs, projects, fallbackOrg, user, cloud = false }: Props)
           <div className='bg-sidebar-border mb-1 h-px w-7' />
           <div className='flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto px-[10px] pt-0.5'>
             {orgs.map(o => (
-              <RailTile key={o.slug} href={`/${o.slug}`} label={o.name} active={o.slug === org?.slug} className={colorFor(o.name)}>
+              <RailTile
+                key={o.slug}
+                href={`/${o.slug}`}
+                label={cloud && o.plan ? `${o.name} · ${o.plan}` : o.name}
+                active={o.slug === org?.slug}
+                className={colorFor(o.name)}
+              >
                 {initials(o.name)}
               </RailTile>
             ))}
@@ -299,14 +338,8 @@ const AppSidebar = ({ orgs, projects, fallbackOrg, user, cloud = false }: Props)
                 <div className='flex min-w-0 items-center gap-1.5'>
                   <p className='truncate text-[15px] font-semibold'>{org?.name ?? themeConfig.templateName}</p>
                   {org && cloud && org.plan && (
-                    <Link
-                      href={`${orgBase}/billing`}
-                      className={cn(
-                        'shrink-0 rounded px-1.5 py-px text-[11px] font-medium transition',
-                        org.plan === 'Free' ? 'bg-sidebar-accent text-muted-foreground hover:text-foreground' : 'bg-primary/10 text-primary hover:bg-primary/15'
-                      )}
-                    >
-                      {org.plan}
+                    <Link href={`${orgBase}/billing`} className='shrink-0 transition hover:opacity-85' title={`${org.plan} plan`}>
+                      <PlanBadge tier={org.tier ?? 'free'} label={org.plan} />
                     </Link>
                   )}
                 </div>
@@ -392,7 +425,8 @@ const AppSidebar = ({ orgs, projects, fallbackOrg, user, cloud = false }: Props)
             ))}
           </div>
 
-          <div className='px-3 pb-3'>
+          <div className='space-y-2 px-3 pb-3'>
+            {org && cloud && org.plan && <PlanCard org={org} orgBase={orgBase} />}
             <QuickBuild />
           </div>
         </div>

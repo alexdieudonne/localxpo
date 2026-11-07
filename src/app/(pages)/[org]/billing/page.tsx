@@ -7,6 +7,7 @@ import { CheckCircle2Icon, InfoIcon } from 'lucide-react'
 
 // Component Imports
 import PageHeader from '@/components/shared/PageHeader'
+import RefreshOnMount from '@/components/shared/RefreshOnMount'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -71,6 +72,7 @@ const BillingPage = async ({ params, searchParams }: { params: Promise<{ org: st
   const { org } = await requireOrg((await params).org)
   const { checkout, session_id: sessionId } = await searchParams
   const configured = stripeConfigured()
+  const before = await getOrgPlan(org.id)
   let syncError: string | null = null
 
   // Apply what happened in Stripe right away (webhooks may not reach a dev server).
@@ -86,6 +88,9 @@ const BillingPage = async ({ params, searchParams }: { params: Promise<{ org: st
   }
 
   const { plan, billing } = await getOrgPlan(org.id)
+
+  // The sidebar and header were rendered with the plan from before the sync: refresh them when it changed.
+  const changed = before.plan.id !== plan.id || before.billing.status !== billing.status
   const usage = await getUsage(org.id)
   const isOwner = org.role === 'owner'
   const live = Boolean(billing.stripe_subscription_id) && ['active', 'trialing', 'past_due'].includes(billing.status)
@@ -93,6 +98,7 @@ const BillingPage = async ({ params, searchParams }: { params: Promise<{ org: st
 
   return (
     <div className='space-y-6'>
+      {changed && <RefreshOnMount />}
       <PageHeader
         title='Billing'
         description={`Plan and usage for ${org.name}. Builds always run on your own machines: the plan covers the dashboard, history and team features.`}

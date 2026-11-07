@@ -24,7 +24,9 @@ import {
   updateUserPassword
 } from '@/lib/server/auth'
 import { verifyPasswordAsync } from '@/lib/server/crypto'
-import { createOrg, uniqueOrgSlug } from '@/lib/server/orgs'
+import { isCloud } from '@/lib/server/billing'
+import { createOrg, slugify, uniqueOrgSlug } from '@/lib/server/orgs'
+import { COMPANY_SIZES, REFERRAL_SOURCES, USE_CASES, values as choiceValues } from '@/lib/signup'
 
 export type FormState = {
   error?: string
@@ -41,7 +43,7 @@ const fieldErrors = (err: z.ZodError) =>
 
 const passwordSchema = z.string().min(8, 'At least 8 characters').max(200, 'Too long')
 
-const registerSchema = z
+const accountSchema = z
   .object({
     name: z.string().trim().min(1, 'Enter your name').max(100),
     email: z.string().trim().email('Enter a valid email'),
@@ -49,6 +51,16 @@ const registerSchema = z
     confirmPassword: z.string()
   })
   .refine(v => v.password === v.confirmPassword, { message: 'Passwords do not match', path: ['confirmPassword'] })
+
+/** Steps 2 and 3 of sign-up, asked on localxpo Cloud only. */
+const profileSchema = z
+  .object({
+    company: z.string().trim().min(1, 'Enter your company name').max(120, 'Keep it under 120 characters'),
+    companySize: z.enum(choiceValues(COMPANY_SIZES), { message: 'Pick a team size' }),
+    referralSource: z.enum(choiceValues(REFERRAL_SOURCES), { message: 'Tell us how you found localxpo' }),
+    useCase: z.enum(choiceValues(USE_CASES), { message: 'Pick what you plan to do' }),
+    useCaseDetails: z.string().trim().max(500, 'Keep it under 500 characters').optional().default('')
+  })
 
 /** Only same-site paths: `/\\evil.com`, `//evil.com`, control characters or absolute URLs fall back to `/`. */
 const safeNext = (value: FormDataEntryValue | null) => {
@@ -68,20 +80,31 @@ const safeNext = (value: FormDataEntryValue | null) => {
 
 export const registerAction = async (_prev: FormState, formData: FormData): Promise<FormState> => {
   const raw = Object.fromEntries(formData) as Record<string, string>
-  const parsed = registerSchema.safeParse(raw)
-  const values = { name: raw.name ?? '', email: raw.email ?? '' }
+  const account = accountSchema.safeParse(raw)
+  const askProfile = isCloud()
+  const profile = askProfile ? profileSchema.safeParse(raw) : null
 
-  if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error), values }
+  if (!account.success || (profile && !profile.success))
+    return { fieldErrors: { ...(profile?.error ? fieldErrors(profile.error) : {}), ...(account.error ? fieldErrors(account.error) : {}) } }
 
-  if (process.env.LOCALXPO_DISABLE_SIGNUP === '1')
-    return { error: 'Registration is disabled on this server.', values }
+  if (process.env.LOCALXPO_DISABLE_SIGNUP === '1') return { error: 'Registration is disabled on this server.' }
 
-  if (await findUserByEmail(parsed.data.email)) return { fieldErrors: { email: 'An account already uses this email' }, values }
+  if (await findUserByEmail(account.data.email)) return { fieldErrors: { email: 'An account already uses this email' } }
 
-  const user = await createUser(parsed.data.name, parsed.data.email, parsed.data.password)
+  const p = profile?.data
+  const company = p?.company || null
 
-  // Everyone gets a personal organization; they can create shared ones later.
-  const org = await createOrg(user.name, user.id, await uniqueOrgSlug(user.email.split('@')[0]))
+  const user = await createUser(account.data.name, account.data.email, account.data.password, {
+    company,
+    companySize: p?.companySize,
+    referralSource: p?.referralSource,
+    useCase: p?.useCase,
+    useCaseDetails: p?.useCaseDetails
+  })
+
+  // The first organization is the company given at sign-up (Cloud). Self-hosted sign-up has no company step: it's named after the user.
+  const emailName = user.email.split('@')[0]
+  const org = await createOrg(company || user.name, user.id, await uniqueOrgSlug(company && slugify(company) !== 'org' ? company : emailName))
 
   await createSession(user.id)
   redirect(`/${org.slug}`)
