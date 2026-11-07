@@ -66,14 +66,61 @@ const portalConfiguration = async () => {
 
 type OrgRef = { id: string; name: string; slug: string }
 
+// ---------- Stale references (test mode → live mode) ----------
+
+/** The object isn't in this Stripe account/mode: typically a test-mode ID left over after switching to live keys. */
+const isMissing = (e: unknown) => e instanceof Stripe.errors.StripeInvalidRequestError && e.code === 'resource_missing'
+
+/**
+ * Forgets Stripe IDs that don't exist with the current key, so the organization is back on Free and can
+ * subscribe again. Test subscriptions can't be moved to live mode (no real card or payment behind them),
+ * and a trial taken in test mode doesn't count.
+ */
+const forgetStripeRefs = async (orgId: string, what: string) => {
+  console.warn(`[billing] ${what} of org ${orgId} not found with this Stripe key (test-mode leftover?): cleared`)
+  await saveBilling(orgId, {
+    stripe_customer_id: null,
+    stripe_subscription_id: null,
+    plan: 'free',
+    billing_interval: null,
+    status: 'none',
+    current_period_end: null,
+    trial_end: null,
+    cancel_at: null,
+    past_due_since: null,
+    trial_used: false
+  })
+}
+
+/** Customers already checked against the current key in this process (one API call per customer, not per page). */
+const checkedCustomers = new Set<string>()
+
+const customerExists = async (id: string) => {
+  if (checkedCustomers.has(id)) return true
+
+  try {
+    const c = await getStripe().customers.retrieve(id)
+
+    if ('deleted' in c && c.deleted) return false
+  } catch (e) {
+    if (isMissing(e)) return false
+    throw e
+  }
+
+  checkedCustomers.add(id)
+
+  return true
+}
+
 export const ensureCustomer = async (org: OrgRef, email: string) => {
   const billing = await getBilling(org.id)
 
-  if (billing.stripe_customer_id) return billing.stripe_customer_id
+  if (billing.stripe_customer_id && (await customerExists(billing.stripe_customer_id))) return billing.stripe_customer_id
+  if (billing.stripe_customer_id) await forgetStripeRefs(org.id, `customer ${billing.stripe_customer_id}`)
 
   const customer = await getStripe().customers.create(
     { name: org.name, email, metadata: { org_id: org.id, org_slug: org.slug } },
-    { idempotencyKey: `customer-${org.id}` }
+    { idempotencyKey: `customer-${org.id}-${billing.stripe_customer_id ? 'renew' : 'new'}` }
   )
 
   await saveBilling(org.id, { stripe_customer_id: customer.id })
@@ -89,7 +136,9 @@ const hasLiveSubscription = (b: OrgBilling) => Boolean(b.stripe_subscription_id)
  */
 export const startCheckout = async (input: { org: OrgRef; email: string; plan: PaidPlanId; interval: BillingInterval; baseUrl: string }) => {
   const { org, plan, interval, baseUrl } = input
-  const billing = await getBilling(org.id)
+
+  // Drops a subscription that doesn't exist with the current key before deciding between switch and Checkout.
+  const billing = await refreshFromStripe(org.id)
   const price = await priceId(plan, interval)
   const stripe = getStripe()
 
@@ -212,7 +261,14 @@ export const refreshFromStripe = async (orgId: string) => {
 
   if (!billing.stripe_subscription_id) return billing
 
-  return (await syncSubscription(await getStripe().subscriptions.retrieve(billing.stripe_subscription_id), orgId)) ?? billing
+  try {
+    return (await syncSubscription(await getStripe().subscriptions.retrieve(billing.stripe_subscription_id), orgId)) ?? billing
+  } catch (e) {
+    if (!isMissing(e)) throw e
+    await forgetStripeRefs(orgId, `subscription ${billing.stripe_subscription_id}`)
+
+    return getBilling(orgId)
+  }
 }
 
 /** Deleting an organization cancels its subscription right away (no further charges). */
@@ -224,7 +280,7 @@ export const cancelForDeletedOrg = async (orgId: string) => {
   if (billing.stripe_subscription_id && billing.status !== 'canceled')
     await getStripe()
       .subscriptions.cancel(billing.stripe_subscription_id, { prorate: true })
-      .catch(e => console.error('[billing] cancel on delete failed', e))
+      .catch(e => !isMissing(e) && console.error('[billing] cancel on delete failed', e))
 }
 
 // ---------- Webhooks ----------
