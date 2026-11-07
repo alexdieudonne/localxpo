@@ -10,7 +10,11 @@ import RegisterForm from '@/views/auth/register-form'
 import { getCurrentUser } from '@/lib/server/auth'
 import { isCloud } from '@/lib/server/billing'
 
-export const metadata = { title: 'Create account' }
+export const metadata = {
+  title: 'Create your free account',
+  description: 'Create a free localxpo account and follow the Expo builds that run on your own machines: live logs, store submissions, one dashboard for the team.',
+  alternates: { canonical: '/register' }
+}
 
 const RegisterPage = async () => {
   if (await getCurrentUser()) redirect('/')

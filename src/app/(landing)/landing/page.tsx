@@ -5,6 +5,9 @@ import Link from 'next/link'
 import { formatHistory, formatLimit, formatPrice, PLAN_ORDER, PLANS, TRIAL_DAYS } from '@/lib/plans'
 import { getCurrentUser } from '@/lib/server/auth'
 import { isCloud } from '@/lib/server/billing'
+import { productJsonLd } from '@/lib/seo'
+import { OG_IMAGES } from '@/lib/site'
+import JsonLd from '@/components/shared/JsonLd'
 
 import CopyCommand from './copy-command'
 import HeroMirror from './hero-mirror'
@@ -21,10 +24,16 @@ import { AgentsPreview, BuildPreview, MachinesPreview, SubmitPreview } from './p
 
 export const dynamic = 'force-dynamic'
 
+const TITLE = 'Build Expo apps locally: EAS Build alternative | localxpo'
+
+const DESCRIPTION =
+  'Build, sign and submit Expo and React Native apps for iOS and Android on your own Mac or PC with fastlane. Live logs, store submissions and a team dashboard. Free for one machine.'
+
 export const metadata = {
-  title: { absolute: 'localxpo: Expo builds on your own machines' },
-  description:
-    'Build, sign and ship Expo apps on the Macs and PCs you already own. Live logs, store submissions, machine metrics and a shared history in one dashboard.'
+  title: { absolute: TITLE },
+  description: DESCRIPTION,
+  alternates: { canonical: '/' },
+  openGraph: { type: 'website', siteName: 'localxpo', url: '/', title: TITLE, description: DESCRIPTION, images: OG_IMAGES }
 }
 
 
@@ -74,6 +83,7 @@ const LandingPage = async () => {
       <ParallaxController />
       <RevealController />
       <SiteHeader user={Boolean(user)} cloud={cloud} />
+      {cloud && <JsonLd data={productJsonLd()} />}
 
       <main>
         <section className={`${s.hero} pb-16`}>
@@ -101,7 +111,7 @@ const LandingPage = async () => {
               </h1>
               <div className={s.enter} style={{ '--d': '450ms' } as React.CSSProperties}>
                 <p className={s.lead}>
-                  localxpo builds and signs your iOS and Android apps on your own Mac or PC, then ships them to the stores. Every log line, step
+                  localxpo builds and signs your Expo and React Native apps for iOS and Android on your own Mac or PC, then ships them to the stores. Every log line, step
                   and gigabyte of memory lands in one dashboard, {cloud ? 'hosted for your team on localxpo Cloud' : 'running on this server for your whole team'}.
                 </p>
                 <div className='mt-7 flex flex-wrap items-center gap-3'>
@@ -278,7 +288,8 @@ const LandingPage = async () => {
                 <h2 className={s.h2}>localxpo Cloud runs the dashboard for you.</h2>
                 <p className={`${s.lead} mt-4`}>
                   Your machines keep doing the builds. Cloud hosts everything around them: the dashboard, the database, the encrypted store keys and
-                  the history, so the team signs up and links a project instead of running a server.
+                  the history, so the team signs up and links a project instead of running a server. Unlike cloud build services, there are no
+                  build minutes to buy.
                 </p>
                 <ul className={s.bullets}>
                   <li>
@@ -396,7 +407,7 @@ const LandingPage = async () => {
 
                 return (
                   <div key={id} className={`${s.plan} ${p.popular ? s.planPopular : ''}`}>
-                    <p className='text-[15px] font-semibold'>{p.name}</p>
+                    <h3 className='text-[15px] font-semibold'>{p.name}</h3>
                     <p className='mt-1'>
                       <span className='text-[2rem] font-semibold tracking-tight tabular-nums'>{formatPrice(p.price.month)}</span>
                       <span className='text-[14px]' style={{ color: 'var(--slate)' }}>

@@ -14,6 +14,16 @@ const hasLanding = () => process.env.LOCALXPO_LANDING !== '0'
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl
 
+  // One address for the home page: visitors who open /landing directly are sent to / (permanent, for search engines).
+  // The rewrite below targets /landing internally and does not run the proxy again.
+  if (pathname === '/landing' && !req.cookies.has(SESSION_COOKIE) && hasLanding()) {
+    const url = req.nextUrl.clone()
+
+    url.pathname = '/'
+
+    return NextResponse.redirect(url, 308)
+  }
+
   if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`))) return NextResponse.next()
 
   if (!req.cookies.has(SESSION_COOKIE)) {
@@ -36,6 +46,9 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Skip API routes (they authenticate themselves), Next internals and static files.
-  matcher: ['/((?!api|_next/static|_next/image|images|favicon.ico).*)']
+  // Skip API routes (they authenticate themselves), Next internals, static files and the files search engines and
+  // browsers fetch without a session (robots, sitemap, icons, manifest, social preview images).
+  matcher: [
+    '/((?!api|_next/static|_next/image|images|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|opengraph-image|twitter-image|icon|apple-icon).*)'
+  ]
 }

@@ -14,6 +14,7 @@ import Providers from '@/components/Providers'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 // Util Imports
+import { indexable, siteUrl } from '@/lib/site'
 import { cn } from '@/lib/utils'
 
 // Style Imports
@@ -24,10 +25,25 @@ import ScrollToTop from '@/components/layout/ScrollToTop'
 const geistSans = GeistSans
 const geistMono = GeistMono
 
+const SHARE_TITLE = 'localxpo: build Expo apps on your own Mac or PC'
+
+const SHARE_DESCRIPTION =
+  'Open-source alternative to cloud build services. Build, sign and submit iOS and Android Expo apps on your own machines with fastlane, and follow every build in one dashboard.'
+
 export const metadata: Metadata = {
   title: { default: 'localxpo', template: '%s · localxpo' },
-  description: 'Track Expo builds that run on your own machine: live logs, readable errors, store credentials made simple.',
-  metadataBase: new URL(`${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}`)
+  description: 'Build, sign and submit Expo apps on your own Mac or PC, and follow every build of the team in one dashboard: live logs, errors explained, store submissions.',
+  applicationName: 'localxpo',
+  metadataBase: new URL(siteUrl()),
+
+  // Only localxpo Cloud is meant for search engines; a self-hosted dashboard stays private.
+  robots: indexable() ? { index: true, follow: true } : { index: false, follow: false },
+  openGraph: { type: 'website', siteName: 'localxpo', locale: 'en_US', url: '/', title: SHARE_TITLE, description: SHARE_DESCRIPTION },
+  twitter: {
+    card: 'summary_large_image',
+    title: SHARE_TITLE,
+    description: 'Local Expo builds with live logs, store submissions and a team dashboard. Open source, free for one machine.'
+  }
 }
 
 const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => {

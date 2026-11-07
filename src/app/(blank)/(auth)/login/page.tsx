@@ -9,7 +9,7 @@ import LoginForm from '@/views/auth/login-form'
 // Lib Imports
 import { getCurrentUser } from '@/lib/server/auth'
 
-export const metadata = { title: 'Sign in' }
+export const metadata = { title: 'Sign in', robots: { index: false, follow: true } }
 
 const LoginPage = async ({ searchParams }: { searchParams: Promise<{ next?: string }> }) => {
   if (await getCurrentUser()) redirect('/')

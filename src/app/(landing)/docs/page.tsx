@@ -7,6 +7,7 @@ import Link from 'next/link'
 // Lib Imports
 import { getCurrentUser } from '@/lib/server/auth'
 import { isCloud } from '@/lib/server/billing'
+import { OG_IMAGES } from '@/lib/site'
 
 import '../landing/utilities.css'
 import s from '../landing/landing.module.css'
@@ -19,9 +20,16 @@ import Toc, { type TocGroup } from './toc'
 
 export const dynamic = 'force-dynamic'
 
+const TITLE = 'Docs: local Expo builds, CLI, fastlane and self-hosting | localxpo'
+
+const DESCRIPTION =
+  'Install the localxpo CLI, link an Expo project, build and sign iOS and Android apps locally, submit to TestFlight and Google Play, use CI tokens and the REST API, or self-host the dashboard.'
+
 export const metadata = {
-  title: { absolute: 'Docs: localxpo' },
-  description: 'Install the localxpo CLI, link an Expo project, build and submit from your own machines, and use the REST API.'
+  title: { absolute: TITLE },
+  description: DESCRIPTION,
+  alternates: { canonical: '/docs' },
+  openGraph: { type: 'article', siteName: 'localxpo', url: '/docs', title: TITLE, description: DESCRIPTION, images: OG_IMAGES }
 }
 
 const GROUPS: TocGroup[] = [
@@ -120,7 +128,7 @@ const DocsPage = async () => {
 
   return (
     <div className={`${s.root} lx-landing`}>
-      <SiteHeader user={Boolean(user)} cloud={cloud} base='/landing' active='docs' />
+      <SiteHeader user={Boolean(user)} cloud={cloud} base={user ? '/landing' : '/'} active='docs' />
 
       <header className={d.hero}>
         <div className={s.wrap}>
@@ -228,7 +236,7 @@ npx localxpo build -p ios --profile production --submit   # build, then upload t
             </p>
           </Section>
 
-          <Section id='build' title='Building'>
+          <Section id='build' title='Build an Expo app locally (iOS and Android)'>
             <CodeBlock
               code={`npx localxpo build -p ios --profile production
 npx localxpo build -p android --profile preview --clean   # re-run expo prebuild --clean
@@ -251,7 +259,7 @@ npx localxpo build -p android -q                           # only errors and ste
             </p>
           </Section>
 
-          <Section id='submit' title='Submitting'>
+          <Section id='submit' title='Submit to TestFlight and Google Play'>
             <CodeBlock
               code={`npx localxpo submit                  # choose from a list
 npx localxpo submit --latest         # newest build on this machine, no prompt
@@ -264,7 +272,7 @@ npx localxpo submit --path app.aab   # any .ipa or .aab`}
             </p>
           </Section>
 
-          <Section id='credentials' title='Store credentials'>
+          <Section id='credentials' title='Code signing and store credentials'>
             <p>
               <C>link</C> and <C>credentials</C> find what builds and uploads need, and only ask for what they can&apos;t find:
             </p>
@@ -303,7 +311,7 @@ npx localxpo agent --list               # what this machine serves`}
             </p>
           </Section>
 
-          <Section id='ci' title='CI and tokens'>
+          <Section id='ci' title='Run local Expo builds in CI'>
             <p>
               Create a token on <strong>CLI &amp; tokens</strong> in the dashboard, then skip <C>link</C> in CI or on a headless Mac:
             </p>
@@ -381,7 +389,7 @@ LOCALXPO_NO_METRICS=1 npx localxpo build -p android    # turn machine metrics of
             </div>
           </Section>
 
-          <Section id='self-host' title='Self-hosting'>
+          <Section id='self-host' title='Self-host the dashboard'>
             <p>
               The dashboard is open source (MIT). Without configuration it uses an embedded Postgres stored in <C>./data</C>; set <C>DATABASE_URL</C> to use your own.
             </p>
@@ -419,9 +427,14 @@ pnpm build && pnpm start     # production`}
             <Mark /> localxpo, open source under the MIT license
           </span>
           <nav className='flex gap-5' aria-label='Footer'>
-            <Link href='/landing' className='hover:text-[var(--ink)]'>
+            <Link href={user ? '/landing' : '/'} className='hover:text-[var(--ink)]'>
               Product
             </Link>
+            {cloud && (
+              <Link href='/pricing' className='hover:text-[var(--ink)]'>
+                Pricing
+              </Link>
+            )}
             <Link href='/login' className='hover:text-[var(--ink)]'>
               Sign in
             </Link>

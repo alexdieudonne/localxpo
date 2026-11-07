@@ -5,16 +5,29 @@ import { notFound } from 'next/navigation'
 // Component Imports
 import Logo from '@/components/shared/Logo'
 import { Button } from '@/components/ui/button'
+import JsonLd from '@/components/shared/JsonLd'
 import PlanCards from '@/views/billing/plan-cards'
 
 // Lib Imports
-import { PAYMENT_GRACE_DAYS, TRIAL_DAYS } from '@/lib/plans'
+import { formatPrice, PAYMENT_GRACE_DAYS, PLANS, TRIAL_DAYS } from '@/lib/plans'
 import { getCurrentUser } from '@/lib/server/auth'
 import { isCloud } from '@/lib/server/billing'
+import { faqJsonLd } from '@/lib/seo'
+import { OG_IMAGES } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata = { title: 'Pricing', description: 'localxpo Cloud plans: build Expo apps on your own machines, follow everything from one dashboard.' }
+const TITLE = `Pricing: free local Expo builds, Pro from ${formatPrice(PLANS.pro.price.month)}/month | localxpo`
+
+const DESCRIPTION =
+  `localxpo Cloud is free for one machine. Pro ${formatPrice(PLANS.pro.price.month)}, Team ${formatPrice(PLANS.team.price.month)}, Business ${formatPrice(PLANS.business.price.month)} per organization per month, with a ${TRIAL_DAYS}-day free trial. No build minutes: builds run on your hardware. Self-hosting is free.`
+
+export const metadata = {
+  title: { absolute: TITLE },
+  description: DESCRIPTION,
+  alternates: { canonical: '/pricing' },
+  openGraph: { type: 'website', siteName: 'localxpo', url: '/pricing', title: TITLE, description: DESCRIPTION, images: OG_IMAGES }
+}
 
 const FAQ = [
   {
@@ -66,9 +79,14 @@ const PricingPage = async () => {
       </header>
 
       <section className='mx-auto max-w-2xl py-12 text-center'>
-        <h1 className='text-4xl font-semibold tracking-tight text-balance'>Your machines build. localxpo keeps track.</h1>
+        <h1 className='text-4xl font-semibold tracking-tight text-balance'>localxpo pricing: free local Expo builds, pay when the team grows</h1>
         <p className='text-muted-foreground mt-3 text-lg text-pretty'>
-          Live logs, metrics, store submissions and a shared history for your Expo apps. Pick a plan per organization; start free.
+          Your machines build, localxpo keeps track: live logs, metrics, store submissions and a shared history for your Expo apps. Pick a plan per
+          organization; start free. Prefer your own server?{' '}
+          <Link href='/docs#self-host' className='text-foreground underline underline-offset-4'>
+            Self-hosting is free
+          </Link>
+          .
         </p>
       </section>
 
@@ -84,7 +102,19 @@ const PricingPage = async () => {
             </div>
           ))}
         </dl>
+        <p className='text-muted-foreground mt-6 text-center text-sm'>
+          More questions? Read the{' '}
+          <Link href='/docs' className='text-foreground underline underline-offset-4'>
+            developer docs
+          </Link>{' '}
+          or see{' '}
+          <Link href='/' className='text-foreground underline underline-offset-4'>
+            how localxpo works
+          </Link>
+          .
+        </p>
       </section>
+      <JsonLd data={faqJsonLd(FAQ)} />
     </div>
   )
 }

@@ -17,6 +17,9 @@ import { failUnresponsiveRuns } from '@/lib/server/liveness'
 import { listOrgsForUser } from '@/lib/server/orgs'
 import { listProjectsForUser } from '@/lib/server/projects'
 
+// The signed-in dashboard is private: never indexed, even if a URL leaks into a search engine.
+export const metadata = { robots: { index: false, follow: false } }
+
 const PagesLayout = async ({ children }: Readonly<{ children: ReactNode }>) => {
   const user = await requireUser()
 

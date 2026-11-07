@@ -1,0 +1,1 @@
+localxpo: build Expo apps on your own Mac or PC, with live logs and one dashboard for the team

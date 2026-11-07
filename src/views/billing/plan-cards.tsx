@@ -145,7 +145,9 @@ const PlanCards = (props: PlanCardsProps) => {
             <Card key={id} className={cn('relative flex flex-col', plan.popular && 'border-primary/60 ring-primary/20 ring-2', current && 'bg-muted/30')}>
               <CardHeader>
                 <div className='flex items-center justify-between gap-2'>
-                  <CardTitle className='text-lg'>{plan.name}</CardTitle>
+                  <CardTitle className='text-lg'>
+                    <h3>{plan.name}</h3>
+                  </CardTitle>
                   {current ? <Badge variant='secondary'>Current</Badge> : plan.popular && <Badge>Most popular</Badge>}
                 </div>
                 <CardDescription>{plan.tagline}</CardDescription>
