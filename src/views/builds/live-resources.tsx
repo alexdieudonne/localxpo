@@ -209,7 +209,7 @@ const LiveResources = ({
             <Spark values={samples.map(s => s.memUsed)} max={last.memTotal} />
           </Tile>
           <Tile label='Memory pressure' value={p ? <span className={cn('flex items-center gap-1', p.className)}>{p.icon} {p.label}</span> : '—'} sub={pressure?.detail} />
-          <Tile label={live ? 'CPU' : 'CPU average'} value={`${Math.round(live ? last.cpu : (summary?.cpuAvg ?? last.cpu))}%`} sub={last.buildCpu !== undefined ? `build ${Math.round(live ? last.buildCpu : (summary?.buildCpuAvg ?? 0))}% · load ${last.load1 ?? '—'}` : undefined}>
+          <Tile label={live ? 'CPU' : 'CPU average'} value={`${Math.round(live ? last.cpu : (summary?.cpuAvg ?? last.cpu))}%`} sub={last.buildCpu !== undefined ? `build ${Math.round(live ? last.buildCpu : (summary?.buildCpuAvg ?? 0))}% · load ${last.load1 !== undefined ? last.load1.toFixed(1) : '—'}` : undefined}>
             <Spark values={samples.map(s => s.cpu)} max={100} />
           </Tile>
           <Tile

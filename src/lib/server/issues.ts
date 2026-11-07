@@ -220,7 +220,9 @@ const PATTERNS: Pattern[] = [
   },
   {
     id: 'lockfile-outdated',
-    test: /ERR_PNPM_OUTDATED_LOCKFILE|npm ci can only install packages when your package\.json and package-lock\.json|lockfile needs to be updated|frozen-lockfile/i,
+
+    // Real error messages only: the install command itself contains `--frozen-lockfile` on every build.
+    test: /ERR_PNPM_OUTDATED_LOCKFILE|npm ci can only install packages when your package\.json and package-lock\.json|lockfile needs to be updated|lockfile had changes, but lockfile is frozen|The lockfile would have been modified by this install/i,
     title: 'Lockfile out of sync with package.json',
     explanation: 'Dependencies changed but the lockfile was not updated.',
     fix: 'Run your package manager install locally, commit the updated lockfile, then build again.'
